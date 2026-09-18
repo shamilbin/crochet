@@ -1,0 +1,146 @@
+import express from 'express';
+import cors from 'cors';
+import bcrypt from 'bcryptjs';
+import rateLimit from 'express-rate-limit';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+import { connectDB } from './_lib/db.js';
+import Product from './_lib/models/Product.js';
+import Category from './_lib/models/Category.js';
+import { signToken, setAuthCookie, clearAuthCookie, requireAuth, getAuthedAdmin } from './_lib/auth.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const admins = JSON.parse(fs.readFileSync(path.join(__dirname, '_lib', 'admins.json'), 'utf-8'));
+
+const app = express();
+
+app.use(express.json());
+app.use(cors({ origin: true, credentials: true }));
+
+// make sure DB is connected before handling any request
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database connection failed' });
+  }
+});
+
+/* ---------------------------- AUTH ---------------------------- */
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many login attempts. Try again in 15 minutes.' },
+});
+
+app.post('/api/auth/login', loginLimiter, async (req, res) => {
+  const { email, password } = req.body || {};
+  if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+
+  const admin = admins.find((a) => a.email.toLowerCase() === String(email).toLowerCase());
+  if (!admin) return res.status(401).json({ error: 'Invalid credentials' });
+
+  const valid = await bcrypt.compare(password, admin.passwordHash);
+  if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
+
+  const token = signToken({ email: admin.email });
+  setAuthCookie(res, token);
+  res.json({ ok: true, email: admin.email });
+});
+
+app.post('/api/auth/logout', (req, res) => {
+  clearAuthCookie(res);
+  res.json({ ok: true });
+});
+
+app.get('/api/auth/me', (req, res) => {
+  const admin = getAuthedAdmin(req);
+  if (!admin) return res.status(401).json({ error: 'Not authenticated' });
+  res.json({ email: admin.email });
+});
+
+/* -------------------------- CATEGORIES ------------------------- */
+
+app.get('/api/categories', async (req, res) => {
+  const categories = await Category.find().sort({ name: 1 });
+  res.json(categories);
+});
+
+app.post('/api/categories', requireAuth, async (req, res) => {
+  try {
+    const { name, slug } = req.body;
+    if (!name || !slug) return res.status(400).json({ error: 'Name and slug required' });
+    const category = await Category.create({ name, slug });
+    res.status(201).json(category);
+  } catch (err) {
+    if (err.code === 11000) return res.status(409).json({ error: 'Category already exists' });
+    res.status(500).json({ error: 'Failed to create category' });
+  }
+});
+
+app.delete('/api/categories/:id', requireAuth, async (req, res) => {
+  const inUse = await Product.exists({ category: req.params.id });
+  if (inUse) return res.status(400).json({ error: 'Category has products. Move or delete them first.' });
+  await Category.findByIdAndDelete(req.params.id);
+  res.json({ ok: true });
+});
+
+/* --------------------------- PRODUCTS --------------------------- */
+
+app.get('/api/products', async (req, res) => {
+  const { category, search, sort, inStock } = req.query;
+  const filter = {};
+  if (category) filter.category = category;
+  if (inStock === 'true') filter.inStock = true;
+  if (search) filter.name = { $regex: search, $options: 'i' };
+
+  let sortSpec = { createdAt: -1 }; // newest first, default
+  if (sort === 'price-asc') sortSpec = { price: 1 };
+  else if (sort === 'price-desc') sortSpec = { price: -1 };
+  else if (sort === 'discount-desc') sortSpec = { discountPercentage: -1 };
+
+  const products = await Product.find(filter).sort(sortSpec).populate('category', 'name slug');
+  res.json(products);
+});
+
+app.get('/api/products/:id', async (req, res) => {
+  const product = await Product.findById(req.params.id).populate('category', 'name slug');
+  if (!product) return res.status(404).json({ error: 'Product not found' });
+  res.json(product);
+});
+
+app.post('/api/products', requireAuth, async (req, res) => {
+  try {
+    const product = await Product.create(req.body);
+    res.status(201).json(product);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.put('/api/products/:id', requireAuth, async (req, res) => {
+  try {
+    const product = await Product.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+    if (!product) return res.status(404).json({ error: 'Product not found' });
+    res.json(product);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.delete('/api/products/:id', requireAuth, async (req, res) => {
+  await Product.findByIdAndDelete(req.params.id);
+  res.json({ ok: true });
+});
+
+export default app;
