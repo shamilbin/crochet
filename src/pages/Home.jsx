@@ -12,12 +12,11 @@ export default function Home() {
     api.getProducts({ sort: 'newest' }).then((p) => setFeatured(p.slice(0, 8))).catch(() => {});
   }, []);
 
-  const heroImages = featured.slice(0, 3).map((p) => p.images?.[0]).filter(Boolean);
-
   return (
     <>
-      <section className="container hero">
-        <div>
+      <section className="container">
+        <div className="hero">
+          <div className="hero-content">
           <div className="hero-eyebrow">Handmade, made to order</div>
           <h1>Little stitches, made with care.</h1>
           <p>
@@ -29,17 +28,19 @@ export default function Home() {
             <Link to="/shop" className="btn btn-outline">Browse categories</Link>
           </div>
         </div>
-        <div className="hero-collage">
-          {heroImages[0] && <img className="c1" src={heroImages[0]} alt="" />}
-          {heroImages[1] && <img className="c2" src={heroImages[1]} alt="" />}
-          {heroImages[2] && <img className="c3" src={heroImages[2]} alt="" />}
         </div>
       </section>
 
       <div className="stitch-divider" />
 
-      <section className="container" style={{ paddingTop: 40 }}>
-        <h2 style={{ fontSize: 26, marginBottom: 18 }}>Shop by category</h2>
+      <section className="container home-section home-categories">
+        <div className="section-heading">
+          <div>
+            <span className="section-kicker">Find your favourite</span>
+            <h2>Shop by category</h2>
+          </div>
+          <Link to="/shop" className="text-link">View all pieces <span aria-hidden="true">→</span></Link>
+        </div>
         <div className="chip-row">
           {categories.map((c) => (
             <Link key={c._id} to={`/category/${c.slug}`} className="chip">
@@ -49,8 +50,21 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="container" style={{ paddingTop: 10 }}>
-        <h2 style={{ fontSize: 26, marginBottom: 18 }}>Newly made</h2>
+      <section className="container maker-story">
+        <div className="maker-story-copy">
+          <span className="section-kicker">Behind every loop</span>
+          <h2>Made slowly, just for you.</h2>
+          <p>From the first yarn loop to the final detail, each Cozy Loopz piece is crafted by hand and made to be treasured.</p>
+        </div>
+      </section>
+
+      <section className="container home-section home-featured">
+        <div className="section-heading">
+          <div>
+            <span className="section-kicker">Fresh from the hook</span>
+            <h2>Newly made</h2>
+          </div>
+        </div>
         {featured.length === 0 ? (
           <div className="empty-state">New pieces are on the hook — check back soon.</div>
         ) : (

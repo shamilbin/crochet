@@ -248,44 +248,46 @@ export default function AdminDashboard() {
 
         {tab === 'products' && !editing && (
           <div className="admin-panel">
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 18 }}>
+            <div className="admin-panel-heading">
               <h3>All products ({products.length})</h3>
               <button className="btn btn-primary" onClick={startNew}>+ Add product</button>
             </div>
 
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th></th><th>Name</th><th>Category</th><th>Price</th><th>Discount</th><th>Status</th><th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {products.map((p) => (
-                  <tr key={p._id}>
-                    <td><img src={p.images[0]} alt="" /></td>
-                    <td>{p.name}</td>
-                    <td>{p.category?.name || '—'}</td>
-                    <td>₹{finalPrice(p.price, p.discountPercentage)}</td>
-                    <td>{p.discountPercentage || 0}%</td>
-                    <td>
-                      <label className="toggle">
-                        <input type="checkbox" checked={p.inStock} onChange={() => toggleStock(p)} />
-                        {p.inStock ? 'In stock' : 'Sold out'}
-                      </label>
-                    </td>
-                    <td>
-                      <div className="row-actions">
-                        <button onClick={() => startEdit(p)}>Edit</button>
-                        <button className="danger" onClick={() => handleDelete(p)}>Delete</button>
-                      </div>
-                    </td>
+            <div className="admin-table-scroll">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th></th><th>Name</th><th>Category</th><th>Price</th><th>Discount</th><th>Status</th><th></th>
                   </tr>
-                ))}
-                {products.length === 0 && (
-                  <tr><td colSpan={7} style={{ color: 'var(--ink-soft)', padding: '20px 10px' }}>No products yet.</td></tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {products.map((p) => (
+                    <tr key={p._id}>
+                      <td className="product-thumbnail"><img src={p.images[0]} alt="" /></td>
+                      <td data-label="Name">{p.name}</td>
+                      <td data-label="Category">{p.category?.name || '—'}</td>
+                      <td data-label="Price">₹{finalPrice(p.price, p.discountPercentage)}</td>
+                      <td data-label="Discount">{p.discountPercentage || 0}%</td>
+                      <td data-label="Status">
+                        <label className="toggle">
+                          <input type="checkbox" checked={p.inStock} onChange={() => toggleStock(p)} />
+                          {p.inStock ? 'In stock' : 'Sold out'}
+                        </label>
+                      </td>
+                      <td data-label="Actions">
+                        <div className="row-actions">
+                          <button onClick={() => startEdit(p)}>Edit</button>
+                          <button className="danger" onClick={() => handleDelete(p)}>Delete</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {products.length === 0 && (
+                    <tr><td className="admin-table-empty" colSpan={7}>No products yet.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 
@@ -367,7 +369,7 @@ export default function AdminDashboard() {
 
               {formError && <div className="field-error">{formError}</div>}
 
-              <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
+              <div className="form-actions">
                 <button className="btn btn-primary" type="submit" disabled={uploadingImages}>
                   {uploadingImages ? 'Preparing images…' : 'Save product'}
                 </button>
@@ -380,7 +382,7 @@ export default function AdminDashboard() {
         {tab === 'categories' && (
           <div className="admin-panel">
             <h3 style={{ marginBottom: 18 }}>Categories</h3>
-            <form onSubmit={handleAddCategory} style={{ display: 'flex', gap: 10, marginBottom: 22 }}>
+            <form className="category-form" onSubmit={handleAddCategory}>
               <input
                 style={{ flex: 1, padding: '11px 14px', borderRadius: 10, border: '1.5px solid var(--line)' }}
                 placeholder="New category name"
@@ -390,18 +392,20 @@ export default function AdminDashboard() {
               <button className="btn btn-primary" type="submit">Add</button>
             </form>
 
-            <table className="admin-table">
-              <thead><tr><th>Name</th><th>Slug</th><th></th></tr></thead>
-              <tbody>
-                {categories.map((c) => (
-                  <tr key={c._id}>
-                    <td>{c.name}</td>
-                    <td>{c.slug}</td>
-                    <td><button className="danger" onClick={() => handleDeleteCategory(c)}>Delete</button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="admin-table-scroll">
+              <table className="admin-table">
+                <thead><tr><th>Name</th><th>Slug</th><th></th></tr></thead>
+                <tbody>
+                  {categories.map((c) => (
+                    <tr key={c._id}>
+                      <td data-label="Name">{c.name}</td>
+                      <td data-label="Slug">{c.slug}</td>
+                      <td data-label="Actions"><button className="danger" onClick={() => handleDeleteCategory(c)}>Delete</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

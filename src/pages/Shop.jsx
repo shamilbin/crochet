@@ -27,10 +27,14 @@ export default function Shop() {
   }, [activeCategory?._id, search, sort]);
 
   return (
-    <section className="container" style={{ paddingTop: 36 }}>
-      <h1 style={{ fontSize: 32, marginBottom: 20 }}>
-        {activeCategory ? activeCategory.name : 'Shop All'}
-      </h1>
+    <section className="container shop-page">
+      <div className="shop-banner">
+        <div>
+          <span className="section-kicker">Made by hand</span>
+          <h1>{activeCategory ? activeCategory.name : 'Shop All'}</h1>
+          <p>Thoughtful crochet pieces, made with care for everyday gifting and keeping.</p>
+        </div>
+      </div>
 
       <div className="chip-row">
         <Link to="/shop" className={`chip ${!slug ? 'active' : ''}`}>All</Link>
