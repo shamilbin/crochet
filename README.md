@@ -14,14 +14,13 @@ cozy-loopz/
     _lib/
       db.js             cached MongoDB connection
       auth.js           JWT + cookie helpers
-      admins.json        admin email + bcrypt password hash
+      admins.json        admin email + password
       models/            Product.js, Category.js
     index.js             all API routes (mounted at /api/*)
   src/                  React app (Vite)
     pages/               Home, Shop, ProductDetail, AdminLogin, AdminDashboard
     components/          Navbar, Footer, ProductCard
   scripts/
-    generate-admin-hash.js   creates a bcrypt hash for your admin password
     seed.js                   seeds starter categories
   vercel.json            routes /api/* to the Express app
 ```
@@ -38,31 +37,16 @@ cozy-loopz/
 
 ## 2. Set your admin password
 
-A working default is already in `api/_lib/admins.json` so you can log in
-immediately and try things out:
-
-- Email: `admin@cozyloopz.com`
-- Password: `TestPassword123`
-
-**Change this before going live.** Don't put a plaintext password anywhere —
-generate a bcrypt hash instead:
-
-```bash
-npm install
-cd api && npm install && cd ..
-node scripts/generate-admin-hash.js "yourStrongPassword"
-```
-
-Copy the printed hash into `api/_lib/admins.json`:
+Edit `api/_lib/admins.json` with a plain email and password:
 
 ```json
 [
-  { "email": "admin@cozyloopz.com", "passwordHash": "<paste hash here>" }
+  { "email": "shamiltk029@gmail.com", "password": "admin@123" }
 ]
 ```
 
-Change the email too if you like. You can add more admins by adding more
-objects to this array (regenerate a hash for each).
+You can add more admins by adding more objects to this array. Restart the
+API after changing this file.
 
 ## 3. Environment variables
 
@@ -88,16 +72,26 @@ categories later from `/admin/dashboard`.
 
 ## 5. Run locally
 
-The frontend and API need to run together. Easiest is the Vercel CLI, which
-emulates the serverless routing locally:
-
 ```bash
-npm install -g vercel
-vercel dev
+cp .env.example .env
+npm install
+npm run dev
 ```
 
-This serves both the React app and `/api/*` on one port. Log in at
-`/admin/login` with the email + password you hashed above.
+This starts the Express API on **http://localhost:5000** and the React app on
+**http://localhost:5173**. Open 5173 in the browser — Vite proxies `/api` to
+the backend.
+
+If `MONGODB_URI` is empty, local mode uses an in-memory database (data is
+wiped when you stop the server). For data that survives restarts, put your
+Atlas connection string in `.env`.
+
+Admin login: `/admin/login`
+
+- Email: `shamiltk029@gmail.com`
+- Password: `admin@123`
+
+You do **not** need `vercel dev` for local work. Use Vercel only when deploying.
 
 ## 6. Deploy to Vercel
 
@@ -128,11 +122,9 @@ the normal "share" link opens a preview page, not the raw image.
 
 ## Notes / things worth knowing
 
-- **Admin credentials live in a JSON file bundled with the code.** Vercel's
-  filesystem is read-only at runtime, so changing the password means
-  editing `admins.json` locally and redeploying — it can't be changed from
-  the admin UI itself. Fine for a single fixed admin; say the word if you'd
-  rather move this into the database so it's editable without a redeploy.
+- **Admin credentials live in `api/_lib/admins.json` as a plain email and password.**
+  Vercel's filesystem is read-only at runtime, so changing them means editing
+  the file and redeploying.
 - Login is rate-limited to 5 attempts per 15 minutes per IP.
 - The WhatsApp number is read from `VITE_WHATSAPP_NUMBER` (frontend env var,
   safe to expose — it's just a public contact number).

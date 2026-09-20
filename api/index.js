@@ -1,6 +1,6 @@
+import './_lib/loadEnv.js';
 import express from 'express';
 import cors from 'cors';
-import bcrypt from 'bcryptjs';
 import rateLimit from 'express-rate-limit';
 import fs from 'fs';
 import path from 'path';
@@ -47,8 +47,7 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
   const admin = admins.find((a) => a.email.toLowerCase() === String(email).toLowerCase());
   if (!admin) return res.status(401).json({ error: 'Invalid credentials' });
 
-  const valid = await bcrypt.compare(password, admin.passwordHash);
-  if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
+  if (password !== admin.password) return res.status(401).json({ error: 'Invalid credentials' });
 
   const token = signToken({ email: admin.email });
   setAuthCookie(res, token);
@@ -144,3 +143,26 @@ app.delete('/api/products/:id', requireAuth, async (req, res) => {
 });
 
 export default app;
+
+if (!process.env.VERCEL) {
+  const port = Number(process.env.PORT) || 5000;
+  app.listen(port, async () => {
+    try {
+      await connectDB();
+      const count = await Category.countDocuments();
+      if (count === 0) {
+        const starters = [
+          { name: 'Gifts', slug: 'gifts' },
+          { name: 'Bags', slug: 'bags' },
+          { name: 'Keychains', slug: 'keychains' },
+          { name: 'Bouquets', slug: 'bouquets' },
+        ];
+        await Category.insertMany(starters);
+        console.log('Seeded starter categories:', starters.map((c) => c.name).join(', '));
+      }
+    } catch (err) {
+      console.error('Failed to start database:', err);
+    }
+    console.log(`API running on http://localhost:${port}`);
+  });
+}

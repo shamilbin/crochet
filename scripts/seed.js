@@ -1,7 +1,5 @@
-// Run: node scripts/seed.js
-// Requires MONGODB_URI in your environment (e.g. `export MONGODB_URI=...` first,
-// or use `npx dotenv-cli -e .env node scripts/seed.js`).
-import mongoose from 'mongoose';
+import '../api/_lib/loadEnv.js';
+import { connectDB } from '../api/_lib/db.js';
 import Category from '../api/_lib/models/Category.js';
 
 const categories = [
@@ -12,16 +10,15 @@ const categories = [
 ];
 
 async function run() {
-  if (!process.env.MONGODB_URI) {
-    console.error('Set MONGODB_URI first.');
-    process.exit(1);
-  }
-  await mongoose.connect(process.env.MONGODB_URI);
+  await connectDB();
   for (const c of categories) {
     await Category.updateOne({ slug: c.slug }, c, { upsert: true });
   }
   console.log('Seeded categories:', categories.map((c) => c.name).join(', '));
-  await mongoose.disconnect();
+  process.exit(0);
 }
 
-run();
+run().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

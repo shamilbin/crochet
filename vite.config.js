@@ -5,9 +5,10 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      // during local dev, run `vercel dev` instead so /api works.
-      // this proxy is a fallback if you run a separate node server on 5000.
-      '/api': 'http://localhost:5000'
-    }
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+    },
   }
 });
