@@ -2,16 +2,71 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, finalPrice } from '../api.js';
 
+const MAX_IMAGES = 4;
+// Kept below Vercel's request-body limit after JSON encoding.
+const MAX_TOTAL_IMAGE_BYTES = 3 * 1024 * 1024;
+const MAX_IMAGE_DIMENSION = 1600;
+
 const emptyProduct = {
   name: '',
   description: '',
-  images: ['', '', '', ''],
+  images: [],
   price: '',
   discountPercentage: '0',
   category: '',
   inStock: true,
   timeToMake: '',
 };
+
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('Could not read this image.'));
+    reader.readAsDataURL(blob);
+  });
+}
+
+function compressImage(file) {
+  if (!file.type.startsWith('image/')) {
+    return Promise.reject(new Error(`${file.name} is not an image.`));
+  }
+
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    image.onload = async () => {
+      URL.revokeObjectURL(objectUrl);
+      const scale = Math.min(1, MAX_IMAGE_DIMENSION / Math.max(image.width, image.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(image.width * scale);
+      canvas.height = Math.round(image.height * scale);
+
+      const context = canvas.getContext('2d');
+      if (!context) return reject(new Error(`Could not prepare ${file.name}.`));
+      context.fillStyle = '#ffffff';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+      canvas.toBlob(async (blob) => {
+        if (!blob) return reject(new Error(`Could not prepare ${file.name}.`));
+        try {
+          resolve(await blobToDataUrl(blob));
+        } catch (err) {
+          reject(err);
+        }
+      }, 'image/jpeg', 0.84);
+    };
+
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error(`Could not open ${file.name}. Please choose a JPG, PNG, WebP, or GIF image.`));
+    };
+
+    image.src = objectUrl;
+  });
+}
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -24,6 +79,7 @@ export default function AdminDashboard() {
   const [formError, setFormError] = useState('');
   const [toast, setToast] = useState('');
   const [newCategory, setNewCategory] = useState('');
+  const [uploadingImages, setUploadingImages] = useState(false);
 
   useEffect(() => {
     api.me().then(() => setChecking(false)).catch(() => navigate('/admin/login'));
@@ -58,7 +114,7 @@ export default function AdminDashboard() {
     setForm({
       name: p.name,
       description: p.description || '',
-      images: [0, 1, 2, 3].map((i) => p.images[i] || ''),
+      images: p.images || [],
       price: String(p.price),
       discountPercentage: String(p.discountPercentage || 0),
       category: p.category?._id || p.category || '',
@@ -73,7 +129,7 @@ export default function AdminDashboard() {
     e.preventDefault();
     setFormError('');
     const images = form.images.map((s) => s.trim()).filter(Boolean);
-    if (images.length === 0) return setFormError('Add at least one image link.');
+    if (images.length === 0) return setFormError('Add at least one product image.');
     if (!form.category) return setFormError('Choose a category.');
 
     const body = {
@@ -100,6 +156,38 @@ export default function AdminDashboard() {
     } catch (err) {
       setFormError(err.message);
     }
+  }
+
+  async function handleImageSelect(e) {
+    const files = Array.from(e.target.files || []);
+    e.target.value = '';
+    if (files.length === 0) return;
+
+    const availableSlots = MAX_IMAGES - form.images.length;
+    if (files.length > availableSlots) {
+      setFormError(`You can add up to ${MAX_IMAGES} images per product. Remove an image before adding more.`);
+      return;
+    }
+
+    setFormError('');
+    setUploadingImages(true);
+    try {
+      const images = await Promise.all(files.map(compressImage));
+      const nextImages = [...form.images, ...images];
+      const totalSize = nextImages.reduce((total, image) => total + image.length, 0);
+      if (totalSize > MAX_TOTAL_IMAGE_BYTES) {
+        throw new Error('These images are still too large after compression. Choose smaller images or fewer images.');
+      }
+      setForm((current) => ({ ...current, images: [...current.images, ...images] }));
+    } catch (err) {
+      setFormError(err.message);
+    } finally {
+      setUploadingImages(false);
+    }
+  }
+
+  function removeImage(index) {
+    setForm((current) => ({ ...current, images: current.images.filter((_, i) => i !== index) }));
   }
 
   async function toggleStock(p) {
@@ -216,24 +304,33 @@ export default function AdminDashboard() {
               </div>
 
               <div className="field">
-                <label>Image links (up to 4 — Google Drive direct-view links)</label>
-                {form.images.map((img, i) => (
-                  <input
-                    key={i}
-                    style={{ marginBottom: 8 }}
-                    placeholder={`Image ${i + 1} URL`}
-                    value={img}
-                    onChange={(e) => {
-                      const next = [...form.images];
-                      next[i] = e.target.value;
-                      setForm({ ...form, images: next });
-                    }}
-                  />
-                ))}
+                <label htmlFor="product-images">Product images (up to 4)</label>
+                <input
+                  id="product-images"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  multiple
+                  onChange={handleImageSelect}
+                  disabled={uploadingImages || form.images.length >= MAX_IMAGES}
+                />
                 <div className="field-hint">
-                  Google Drive share links need converting: use
-                  https://drive.google.com/uc?export=view&amp;id=FILE_ID
+                  {uploadingImages
+                    ? 'Preparing images…'
+                    : 'Choose images from your device. They are resized before being saved.'}
                 </div>
+
+                {form.images.length > 0 && (
+                  <div className="image-preview-grid">
+                    {form.images.map((image, index) => (
+                      <div className="image-preview" key={`${image.slice(0, 40)}-${index}`}>
+                        <img src={image} alt={`Product preview ${index + 1}`} />
+                        <button type="button" onClick={() => removeImage(index)} aria-label={`Remove image ${index + 1}`}>
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="field-row">
@@ -271,7 +368,9 @@ export default function AdminDashboard() {
               {formError && <div className="field-error">{formError}</div>}
 
               <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
-                <button className="btn btn-primary" type="submit">Save product</button>
+                <button className="btn btn-primary" type="submit" disabled={uploadingImages}>
+                  {uploadingImages ? 'Preparing images…' : 'Save product'}
+                </button>
                 <button className="btn btn-outline" type="button" onClick={() => setEditing(null)}>Cancel</button>
               </div>
             </form>

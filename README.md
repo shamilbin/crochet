@@ -78,8 +78,9 @@ npm install
 npm run dev
 ```
 
-This starts the Express API on **http://localhost:5000** and the React app on
-**http://localhost:5173**. Open 5173 in the browser — Vite proxies `/api` to
+This starts the Express API on **http://localhost:5001** and the React app on
+**http://localhost:5173**. Open the Vite URL printed in the terminal — it
+automatically uses the next available port if 5173 is busy. Vite proxies `/api` to
 the backend.
 
 If `MONGODB_URI` is empty, local mode uses an in-memory database (data is
@@ -106,19 +107,12 @@ You do **not** need `vercel dev` for local work. Use Vercel only when deploying.
    not signed in) — it's not linked anywhere in the public site, so regular
    visitors won't stumble onto it.
 
-## Adding product images (Google Drive)
+## Adding product images
 
-Since images are stored as links, not uploads:
-
-1. Upload the photo to Google Drive.
-2. Right-click → Share → set to "Anyone with the link".
-3. Copy the file ID from the share link
-   (`https://drive.google.com/file/d/FILE_ID/view`).
-4. Use this format in the admin form instead of the share link:
-   `https://drive.google.com/uc?export=view&id=FILE_ID`
-
-That direct-view format is what actually renders as an image on the site —
-the normal "share" link opens a preview page, not the raw image.
+In the admin product form, choose up to four JPG, PNG, WebP, or GIF files
+directly from your device. The app resizes and compresses them before saving,
+so no image-hosting link is needed. The combined image data for one product is
+limited to 3 MB to stay within the deployment request limit.
 
 ## Notes / things worth knowing
 

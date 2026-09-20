@@ -16,7 +16,9 @@ const admins = JSON.parse(fs.readFileSync(path.join(__dirname, '_lib', 'admins.j
 
 const app = express();
 
-app.use(express.json());
+// Product images are compressed in the browser and sent as data URLs.
+// This leaves room below Vercel's request-body limit for product details.
+app.use(express.json({ limit: '4mb' }));
 app.use(cors({ origin: true, credentials: true }));
 
 // make sure DB is connected before handling any request
@@ -145,7 +147,9 @@ app.delete('/api/products/:id', requireAuth, async (req, res) => {
 export default app;
 
 if (!process.env.VERCEL) {
-  const port = Number(process.env.PORT) || 5000;
+  // Port 5000 is reserved by macOS Control Center/AirPlay on some machines.
+  // Keep this in sync with Vite's local /api proxy (vite.config.js).
+  const port = Number(process.env.PORT) || 5001;
   app.listen(port, async () => {
     try {
       await connectDB();
