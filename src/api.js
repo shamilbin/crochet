@@ -25,6 +25,7 @@ export const api = {
   createCategory: (body) => request('/categories', { method: 'POST', body: JSON.stringify(body) }),
   deleteCategory: (id) => request(`/categories/${id}`, { method: 'DELETE' }),
 
+  getSiteConfig: () => request('/config'),
   login: (email, password) => request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
   logout: () => request('/auth/logout', { method: 'POST' }),
   me: () => request('/auth/me'),

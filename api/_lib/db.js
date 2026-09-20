@@ -12,16 +12,7 @@ async function resolveUri() {
   const uri = process.env.MONGODB_URI?.trim();
   if (uri) return uri;
 
-  if (process.env.VERCEL) {
-    throw new Error('MONGODB_URI is not set. Add it in your environment variables.');
-  }
-
-  const { MongoMemoryServer } = await import('mongodb-memory-server');
-  if (!global._mongoMemory) {
-    console.log('No MONGODB_URI set — starting an in-memory database for local dev.');
-    global._mongoMemory = await MongoMemoryServer.create();
-  }
-  return global._mongoMemory.getUri();
+  throw new Error('MONGODB_URI is not set. Add a persistent MongoDB Atlas connection string.');
 }
 
 export async function connectDB() {
@@ -29,7 +20,7 @@ export async function connectDB() {
 
   if (!cached.promise) {
     cached.promise = resolveUri().then((uri) =>
-      mongoose.connect(uri, { bufferCommands: false })
+      mongoose.connect(uri, { bufferCommands: false, serverSelectionTimeoutMS: 10_000 })
     );
   }
   cached.conn = await cached.promise;

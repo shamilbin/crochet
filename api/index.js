@@ -21,15 +21,13 @@ const app = express();
 app.use(express.json({ limit: '4mb' }));
 app.use(cors({ origin: true, credentials: true }));
 
-// make sure DB is connected before handling any request
-app.use(async (req, res, next) => {
-  try {
-    await connectDB();
-    next();
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Database connection failed' });
-  }
+// This is intentionally served by the API instead of a VITE_ variable, so a
+// WhatsApp number changed in Vercel's environment is used by the live site
+// after redeployment. It is public contact information, not a secret.
+app.get('/api/config', (req, res) => {
+  const whatsappNumber = String(process.env.WHATSAPP_NUMBER || process.env.VITE_WHATSAPP_NUMBER || '')
+    .replace(/\D/g, '');
+  res.json({ whatsappNumber });
 });
 
 /* ---------------------------- AUTH ---------------------------- */
@@ -65,6 +63,24 @@ app.get('/api/auth/me', (req, res) => {
   const admin = getAuthedAdmin(req);
   if (!admin) return res.status(401).json({ error: 'Not authenticated' });
   res.json({ email: admin.email });
+});
+
+// Authentication does not depend on the product database. Keeping this after
+// the auth routes lets an admin sign in and see a clear database error rather
+// than rejecting valid credentials when the database is temporarily offline.
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error(err);
+    const missingConfig = /MONGODB_URI is not set/.test(err.message);
+    res.status(500).json({
+      error: missingConfig
+        ? 'Database is not configured. Add MONGODB_URI to use persistent product storage.'
+        : 'Database connection failed',
+    });
+  }
 });
 
 /* -------------------------- CATEGORIES ------------------------- */

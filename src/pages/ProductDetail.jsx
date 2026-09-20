@@ -2,14 +2,13 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api, finalPrice } from '../api.js';
 
-const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '919645213232';
-
 export default function ProductDetail() {
   const { id } = useParams();
   const [product, setProduct] = useState(null);
   const [activeImg, setActiveImg] = useState(0);
   const [qty, setQty] = useState(1);
   const [notFound, setNotFound] = useState(false);
+  const [whatsappNumber, setWhatsappNumber] = useState('');
 
   useEffect(() => {
     setProduct(null);
@@ -17,6 +16,12 @@ export default function ProductDetail() {
     setQty(1);
     api.getProduct(id).then(setProduct).catch(() => setNotFound(true));
   }, [id]);
+
+  useEffect(() => {
+    api.getSiteConfig()
+      .then(({ whatsappNumber: number }) => setWhatsappNumber(number || ''))
+      .catch(() => setWhatsappNumber(''));
+  }, []);
 
   useEffect(() => {
     if (!product) return;
@@ -53,7 +58,7 @@ export default function ProductDetail() {
   const pageUrl = typeof window !== 'undefined' ? window.location.href : '';
 
   const message = `Hi! I'd like to order:\n${product.name} (x${qty}) - ₹${price * qty}\n${pageUrl}`;
-  const waLink = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+  const waLink = whatsappNumber ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}` : '';
 
   return (
     <section className="container product-detail">
@@ -108,9 +113,13 @@ export default function ProductDetail() {
               </div>
             </div>
 
-            <a href={waLink} target="_blank" rel="noreferrer" className="btn btn-whatsapp">
-              Buy on WhatsApp — ₹{price * qty}
-            </a>
+            {waLink ? (
+              <a href={waLink} target="_blank" rel="noreferrer" className="btn btn-whatsapp">
+                Buy on WhatsApp — ₹{price * qty}
+              </a>
+            ) : (
+              <p className="whatsapp-unavailable">WhatsApp ordering is being configured.</p>
+            )}
           </>
         )}
       </div>

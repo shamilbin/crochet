@@ -97,6 +97,10 @@ button {
   font-size: 16px;
 }
 .btn-whatsapp:hover { background: #2F5F46; }
+.whatsapp-unavailable {
+  margin: 0; padding: 14px 16px; border-radius: var(--radius-s);
+  background: var(--cream-deep); color: var(--ink-soft); font-size: 14px; text-align: center;
+}
 
 /* ---------- Stitched divider ---------- */
 

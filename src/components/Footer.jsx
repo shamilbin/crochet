@@ -9,7 +9,7 @@ export default function Footer() {
           </p>
         </div>
         <div>
-          <p>© {new Date().getFullYear()} Cozy Loopz. Orders placed via WhatsApp.</p>
+          <p>© {new Date().getFullYear()} Cozy Loopz.</p>
         </div>
       </div>
     </footer>

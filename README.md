@@ -55,10 +55,10 @@ Copy `.env.example` to `.env` for local dev, and set the same variables in
 
 | Variable | Where | Notes |
 |---|---|---|
-| `MONGODB_URI` | Vercel + local | from Atlas |
+| `MONGODB_URI` | Vercel + local | required; from a free MongoDB Atlas cluster |
 | `JWT_SECRET` | Vercel + local | any long random string |
 | `NODE_ENV` | Vercel | set to `production` |
-| `VITE_WHATSAPP_NUMBER` | Vercel + local | e.g. `919645213232` (country code, no `+` or spaces) |
+| `WHATSAPP_NUMBER` | Vercel + local | e.g. `919645213232`; the product page reads this from the API |
 
 ## 4. Seed starter categories (optional)
 
@@ -83,9 +83,10 @@ This starts the Express API on **http://localhost:5001** and the React app on
 automatically uses the next available port if 5173 is busy. Vite proxies `/api` to
 the backend.
 
-If `MONGODB_URI` is empty, local mode uses an in-memory database (data is
-wiped when you stop the server). For data that survives restarts, put your
-Atlas connection string in `.env`.
+`MONGODB_URI` is required. The app intentionally refuses to use a temporary
+in-memory database so products and categories cannot appear to save and then
+disappear after an API restart. Use a free MongoDB Atlas cluster for durable
+storage in local development and Vercel.
 
 Admin login: `/admin/login`
 
@@ -107,6 +108,15 @@ You do **not** need `vercel dev` for local work. Use Vercel only when deploying.
    not signed in) — it's not linked anywhere in the public site, so regular
    visitors won't stumble onto it.
 
+### Free persistent database
+
+This app already uses MongoDB, so MongoDB Atlas is the simplest free hosted
+database—no code migration to Firebase or Supabase is needed. Create an Atlas
+**Free** cluster, create a database user, allow network access from Vercel,
+and copy its Node.js connection string into `MONGODB_URI` both locally and in
+Vercel. Atlas also offers a Vercel integration that can configure
+`MONGODB_URI` for the project automatically.
+
 ## Adding product images
 
 In the admin product form, choose up to four JPG, PNG, WebP, or GIF files
@@ -120,7 +130,8 @@ limited to 3 MB to stay within the deployment request limit.
   Vercel's filesystem is read-only at runtime, so changing them means editing
   the file and redeploying.
 - Login is rate-limited to 5 attempts per 15 minutes per IP.
-- The WhatsApp number is read from `VITE_WHATSAPP_NUMBER` (frontend env var,
-  safe to expose — it's just a public contact number).
+- The WhatsApp number is read from `WHATSAPP_NUMBER` by the API. It is safe to
+  expose because it is public contact information; redeploy after changing it
+  in Vercel.
 - `discountPercentage` is stored per product; the final price shown
   everywhere is calculated as `price - (price * discount / 100)`.
