@@ -79,6 +79,9 @@ export default function AdminDashboard() {
   const [formError, setFormError] = useState('');
   const [toast, setToast] = useState('');
   const [newCategory, setNewCategory] = useState('');
+  const [categoryError, setCategoryError] = useState('');
+  const [savingCategory, setSavingCategory] = useState(false);
+  const [dataError, setDataError] = useState('');
   const [uploadingImages, setUploadingImages] = useState(false);
 
   useEffect(() => {
@@ -89,9 +92,20 @@ export default function AdminDashboard() {
     if (!checking) refreshAll();
   }, [checking]);
 
-  function refreshAll() {
-    api.getProducts({ sort: 'newest' }).then(setProducts).catch(() => {});
-    api.getCategories().then(setCategories).catch(() => {});
+  async function refreshAll() {
+    const [productsResult, categoriesResult] = await Promise.allSettled([
+      api.getProducts({ sort: 'newest' }),
+      api.getCategories(),
+    ]);
+    const errors = [];
+
+    if (productsResult.status === 'fulfilled') setProducts(productsResult.value);
+    else errors.push(productsResult.reason?.message || 'Could not load products.');
+
+    if (categoriesResult.status === 'fulfilled') setCategories(categoriesResult.value);
+    else errors.push(categoriesResult.reason?.message || 'Could not load categories.');
+
+    setDataError([...new Set(errors)].join(' '));
   }
 
   function showToast(msg) {
@@ -204,14 +218,24 @@ export default function AdminDashboard() {
 
   async function handleAddCategory(e) {
     e.preventDefault();
-    if (!newCategory.trim()) return;
-    const slug = newCategory.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const name = newCategory.trim().replace(/\s+/g, ' ');
+    if (!name) {
+      setCategoryError('Enter a category name.');
+      return;
+    }
+
+    setCategoryError('');
+    setSavingCategory(true);
     try {
-      await api.createCategory({ name: newCategory.trim(), slug });
+      // The API creates the slug so category names work consistently on every device.
+      await api.createCategory({ name });
       setNewCategory('');
-      refreshAll();
+      await refreshAll();
+      showToast('Category added');
     } catch (err) {
-      showToast(err.message);
+      setCategoryError(err.message || 'Could not add the category.');
+    } finally {
+      setSavingCategory(false);
     }
   }
 
@@ -230,7 +254,7 @@ export default function AdminDashboard() {
   return (
     <div className="admin-shell">
       <div className="admin-topbar">
-        <strong style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: 'var(--berry)' }}>
+        <strong className="admin-brand">
           Cozy Loopz Admin
         </strong>
         <button className="btn btn-outline" onClick={handleLogout}>Log out</button>
@@ -245,6 +269,8 @@ export default function AdminDashboard() {
             Categories
           </button>
         </div>
+
+        {dataError && <div className="admin-data-error" role="alert">{dataError}</div>}
 
         {tab === 'products' && !editing && (
           <div className="admin-panel">
@@ -353,6 +379,13 @@ export default function AdminDashboard() {
                     <option value="">Select...</option>
                     {categories.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
                   </select>
+                  {categories.length === 0 && (
+                    <div className="field-hint">
+                      {dataError
+                        ? 'Categories could not load. Resolve the database connection message above and try again.'
+                        : 'Add a category from the Categories tab before saving this product.'}
+                    </div>
+                  )}
                 </div>
                 <div className="field">
                   <label>Time to make</label>
@@ -383,14 +416,25 @@ export default function AdminDashboard() {
           <div className="admin-panel">
             <h3 style={{ marginBottom: 18 }}>Categories</h3>
             <form className="category-form" onSubmit={handleAddCategory}>
+              <label className="sr-only" htmlFor="new-category">New category name</label>
               <input
-                style={{ flex: 1, padding: '11px 14px', borderRadius: 10, border: '1.5px solid var(--line)' }}
+                id="new-category"
                 placeholder="New category name"
                 value={newCategory}
-                onChange={(e) => setNewCategory(e.target.value)}
+                onChange={(e) => {
+                  setNewCategory(e.target.value);
+                  if (categoryError) setCategoryError('');
+                }}
+                maxLength={60}
+                disabled={savingCategory}
+                required
               />
-              <button className="btn btn-primary" type="submit">Add</button>
+              <button className="btn btn-primary" type="submit" disabled={savingCategory}>
+                {savingCategory ? 'Adding…' : 'Add category'}
+              </button>
             </form>
+
+            {categoryError && <div className="field-error category-error" role="alert">{categoryError}</div>}
 
             <div className="admin-table-scroll">
               <table className="admin-table">
@@ -400,9 +444,12 @@ export default function AdminDashboard() {
                     <tr key={c._id}>
                       <td data-label="Name">{c.name}</td>
                       <td data-label="Slug">{c.slug}</td>
-                      <td data-label="Actions"><button className="danger" onClick={() => handleDeleteCategory(c)}>Delete</button></td>
+                      <td data-label="Actions"><button type="button" className="danger" onClick={() => handleDeleteCategory(c)}>Delete</button></td>
                     </tr>
                   ))}
+                  {categories.length === 0 && (
+                    <tr><td className="admin-table-empty" colSpan={3}>No categories yet. Add one above before creating a product.</td></tr>
+                  )}
                 </tbody>
               </table>
             </div>

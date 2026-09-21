@@ -23,6 +23,15 @@ export async function connectDB() {
       mongoose.connect(uri, { bufferCommands: false, serverSelectionTimeoutMS: 10_000 })
     );
   }
-  cached.conn = await cached.promise;
-  return cached.conn;
+
+  try {
+    cached.conn = await cached.promise;
+    return cached.conn;
+  } catch (err) {
+    // Do not permanently cache a rejected connection. This lets the API
+    // recover after Atlas network access or credentials are corrected.
+    cached.conn = null;
+    cached.promise = null;
+    throw err;
+  }
 }

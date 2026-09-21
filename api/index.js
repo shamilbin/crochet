@@ -73,11 +73,14 @@ app.use(async (req, res, next) => {
     await connectDB();
     next();
   } catch (err) {
-    console.error(err);
+    console.error('Database connection failed:', err.name, err.message);
     const missingConfig = /MONGODB_URI is not set/.test(err.message);
-    res.status(500).json({
+    const atlasUnavailable = err.name === 'MongooseServerSelectionError';
+    res.status(atlasUnavailable ? 503 : 500).json({
       error: missingConfig
         ? 'Database is not configured. Add MONGODB_URI to use persistent product storage.'
+        : atlasUnavailable
+          ? 'MongoDB Atlas cannot be reached. In Atlas, add this device or server IP address under Network Access, then try again.'
         : 'Database connection failed',
     });
   }
@@ -92,12 +95,27 @@ app.get('/api/categories', async (req, res) => {
 
 app.post('/api/categories', requireAuth, async (req, res) => {
   try {
-    const { name, slug } = req.body;
-    if (!name || !slug) return res.status(400).json({ error: 'Name and slug required' });
+    const name = typeof req.body?.name === 'string'
+      ? req.body.name.trim().replace(/\s+/g, ' ')
+      : '';
+    if (!name) return res.status(400).json({ error: 'Enter a category name.' });
+    if (name.length > 60) return res.status(400).json({ error: 'Category names can be at most 60 characters.' });
+
+    // Generate this on the server instead of trusting a browser-provided slug.
+    // Unicode letters and numbers are deliberately preserved for non-English names.
+    const slug = name
+      .normalize('NFKC')
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}]+/gu, '-')
+      .replace(/(^-|-$)/g, '');
+    if (!slug) return res.status(400).json({ error: 'Use at least one letter or number in the category name.' });
+
     const category = await Category.create({ name, slug });
     res.status(201).json(category);
   } catch (err) {
     if (err.code === 11000) return res.status(409).json({ error: 'Category already exists' });
+    if (err.name === 'ValidationError') return res.status(400).json({ error: err.message });
+    console.error('Failed to create category:', err);
     res.status(500).json({ error: 'Failed to create category' });
   }
 });
