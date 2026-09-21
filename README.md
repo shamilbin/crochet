@@ -67,7 +67,7 @@ export MONGODB_URI="your-connection-string"
 node scripts/seed.js
 ```
 
-This adds Gifts, Bags, Keychains, Bouquets. You can also add/remove
+This adds Flowers, Bags, Keychains, Bouquets. You can also add/remove
 categories later from `/admin/dashboard`.
 
 ## 5. Run locally

@@ -190,7 +190,7 @@ if (!process.env.VERCEL) {
       const count = await Category.countDocuments();
       if (count === 0) {
         const starters = [
-          { name: 'Gifts', slug: 'gifts' },
+          { name: 'Flowers', slug: 'flowers' },
           { name: 'Bags', slug: 'bags' },
           { name: 'Keychains', slug: 'keychains' },
           { name: 'Bouquets', slug: 'bouquets' },

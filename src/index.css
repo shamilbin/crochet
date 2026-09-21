@@ -491,6 +491,16 @@ button {
 }
 .footer-inner { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
 .footer strong { color: var(--ink); font-family: var(--font-display); font-size: 18px; }
+.footer-links { display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
+.footer-links p { margin: 0; }
+.footer-instagram {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  min-height: 42px; padding: 10px 16px; border-radius: 999px;
+  background: var(--berry); color: var(--white); font-weight: 600;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+.footer-instagram:hover { background: var(--berry-deep); }
+.footer-instagram:active { transform: scale(0.98); }
 
 /* ---------- Admin ---------- */
 
@@ -674,8 +684,9 @@ button {
   .qty-row { justify-content: space-between; margin: 18px 0; }
 
   .footer { padding: 30px 0 36px; margin-top: 14px; }
-  .footer-inner { text-align: center; justify-content: center; gap: 4px; }
+  .footer-inner { text-align: center; justify-content: center; gap: 14px; }
   .footer-inner p { margin-left: auto; margin-right: auto; }
+  .footer-links { align-items: center; }
 
   .admin-login-wrap { align-items: flex-start; padding: 36px 16px; }
   .admin-card { padding: 28px 20px; border-radius: 12px; }
