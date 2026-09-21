@@ -13,7 +13,8 @@ const ProductSchema = new mongoose.Schema(
     discountPercentage: { type: Number, default: 0, min: 0, max: 100 },
     category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
     inStock: { type: Boolean, default: true },
-    timeToMake: { type: String, default: '' }, // free text, e.g. "3-5 days"
+    timeToMake: { type: String, default: '' },
+    timeToMakeUnit: { type: String, enum: ['hours', 'days', ''], default: '' },
   },
   { timestamps: true }
 );

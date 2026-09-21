@@ -16,6 +16,7 @@ const emptyProduct = {
   category: '',
   inStock: true,
   timeToMake: '',
+  timeToMakeUnit: 'days',
 };
 
 function blobToDataUrl(blob) {
@@ -134,6 +135,7 @@ export default function AdminDashboard() {
       category: p.category?._id || p.category || '',
       inStock: p.inStock,
       timeToMake: p.timeToMake || '',
+      timeToMakeUnit: p.timeToMakeUnit || 'days',
     });
     setEditing(p);
     setFormError('');
@@ -155,6 +157,7 @@ export default function AdminDashboard() {
       category: form.category,
       inStock: form.inStock,
       timeToMake: form.timeToMake.trim(),
+      timeToMakeUnit: form.timeToMake.trim() ? form.timeToMakeUnit : '',
     };
 
     try {
@@ -389,7 +392,25 @@ export default function AdminDashboard() {
                 </div>
                 <div className="field">
                   <label>Time to make</label>
-                  <input placeholder="e.g. 3-5 days" value={form.timeToMake} onChange={(e) => setForm({ ...form, timeToMake: e.target.value })} />
+                  <div className="time-to-make-control">
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      inputMode="numeric"
+                      placeholder="e.g. 3"
+                      value={form.timeToMake}
+                      onChange={(e) => setForm({ ...form, timeToMake: e.target.value })}
+                    />
+                    <select
+                      aria-label="Time to make unit"
+                      value={form.timeToMakeUnit}
+                      onChange={(e) => setForm({ ...form, timeToMakeUnit: e.target.value })}
+                    >
+                      <option value="days">Days</option>
+                      <option value="hours">Hours</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 

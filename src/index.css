@@ -459,6 +459,7 @@ button {
 .pd-price-final { font-size: 28px; font-weight: 700; color: var(--berry); }
 .pd-price-original { font-size: 18px; color: var(--ink-soft); text-decoration: line-through; }
 .pd-desc { color: var(--ink-soft); line-height: 1.7; margin: 18px 0; }
+.product-info { min-width: 0; }
 
 .pd-meta {
   display: flex; gap: 22px; flex-wrap: wrap;
@@ -479,6 +480,12 @@ button {
 }
 .qty-control button:hover { background: var(--cream-deep); }
 .qty-control span { width: 40px; text-align: center; font-weight: 600; }
+
+.product-recommendations { padding: 0 0 70px; }
+.product-recommendations .product-grid { padding-bottom: 0; }
+
+.time-to-make-control { display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 10px; }
+.time-to-make-control select { min-width: 0; }
 
 /* ---------- Footer ---------- */
 
@@ -602,6 +609,15 @@ button {
 .toggle {
   display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;
 }
+.toggle input[type="checkbox"] {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--berry);
+}
 
 .toast {
   position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
@@ -672,16 +688,22 @@ button {
   .price-final { font-size: 16px; }
   .price-original { font-size: 13px; }
 
-  .product-detail { gap: 24px; padding: 24px 0 44px; }
+  .product-detail { gap: 22px; padding: 20px 0 28px; }
   .carousel-main { border-radius: 12px; }
   .carousel-thumbs { overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
   .carousel-thumb { flex: 0 0 60px; width: 60px; height: 60px; }
-  .pd-name { font-size: 29px; }
-  .pd-price-row { gap: 8px; flex-wrap: wrap; margin: 14px 0; }
+  .product-info { padding: 20px 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--white); }
+  .pd-category { margin-bottom: 10px; }
+  .pd-name { font-size: clamp(28px, 8vw, 34px); margin-bottom: 16px; }
+  .pd-price-row { gap: 8px; flex-wrap: wrap; margin: 16px 0; }
   .pd-price-final { font-size: 25px; }
   .pd-price-original { font-size: 16px; }
-  .pd-desc { line-height: 1.6; }
-  .qty-row { justify-content: space-between; margin: 18px 0; }
+  .pd-desc { line-height: 1.65; margin: 20px 0; }
+  .pd-meta { padding: 14px 0; margin: 14px 0 22px; }
+  .qty-row { justify-content: space-between; margin: 22px 0; }
+  .product-info .btn-whatsapp { min-height: 52px; }
+  .product-recommendations { padding: 12px 0 48px; }
+  .product-recommendations .section-heading { margin-bottom: 16px; }
 
   .footer { padding: 30px 0 36px; margin-top: 14px; }
   .footer-inner { text-align: center; justify-content: center; gap: 14px; }
@@ -692,6 +714,7 @@ button {
   .admin-card { padding: 28px 20px; border-radius: 12px; }
   .admin-card h2 { font-size: 30px; }
   .field input, .field select, .field textarea { min-height: 44px; font-size: 16px; }
+  .field .toggle input[type="checkbox"] { min-height: 0; }
   .field textarea { min-height: 104px; }
 
   .admin-topbar { padding: 12px 16px; gap: 12px; }
